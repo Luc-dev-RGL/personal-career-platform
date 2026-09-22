@@ -1,26 +1,185 @@
 @import "tailwindcss";
 
+/* ————————————————————————————————————————————————
+   DESIGN SYSTEM — "Bleu Nuit Éditorial"
+   Identité : bleu nuit profond (jamais noir), typographie forte,
+   un seul accent orange chaud. Pas de gradient, pas de
+   glassmorphism : la hiérarchie fait le travail.
+   ———————————————————————————————————————————————— */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #141e34;
+  --bg-elevated: #1a2540;
+  --bg-surface: #1f2a47;
+  --border: #2c3a5e;
+  --border-strong: #3d4d77;
+  --text: #f0ede4;
+  --text-muted: #9aa5c0;
+  --text-faint: #6b7898;
+  /* Palette sémantique : chaque couleur porte un sens, l'orange
+     reste la couleur de marque (CTA, liens, moments forts). */
+  --accent: #ff6b2c;
+  --accent-hover: #ff8351;
+  --accent-dim: rgba(255, 107, 44, 0.14);
+  --info: #6fa8ff;
+  --info-dim: rgba(111, 168, 255, 0.14);
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #fbbf24;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-elevated: var(--bg-elevated);
+  --color-surface: var(--bg-surface);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-dim: var(--accent-dim);
+  --color-info: var(--info);
+  --color-info-dim: var(--info-dim);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Scrollbars sobres */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* Label metadata : petit monospace uppercase — signature du design */
+.label-mono {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Titre display : Space Grotesk, tracking serré */
+.display {
+  font-family: var(--font-space-grotesk), sans-serif;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
+/* Ligne de séparation fine */
+.rule {
+  border-color: var(--border);
+}
+
+/* Point de statut pulsant (disponibilité) */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+}
+.status-dot {
+  animation: pulse-dot 2.2s ease-in-out infinite;
+}
+
+/* Reveal au scroll : discret, 300ms, sans exagération */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Lien souligné animé (nav) */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.25s ease;
+}
+.link-underline:hover::after,
+.link-underline[aria-current="page"]::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Focus visible accessible partout */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Grille de fond subtile pour certaines sections */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(240, 237, 228, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(240, 237, 228, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* Reduced motion : respecter la préférence utilisateur */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .status-dot {
+    animation: none;
+  }
 }
