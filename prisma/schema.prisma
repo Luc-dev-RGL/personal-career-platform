@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ——— Tous les modèles ———
+
+model User {
+  id            Int              @id @default(autoincrement())
+  email         String           @unique
+  password      String
+  role          String           @default("admin")
+  createdAt     DateTime         @default(now())
+
+  projects      Project[]
+  experiences   Experience[]
+  skills        Skill[]
+  articles      Article[]
+  services      Service[]
+  availables    Availability[]
+  appointments  Appointment[]
+  leads         Lead[]
+  conversations Conversation[]
+  notifications Notification[]
+  knowledge     KnowledgeChunk[]
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  imageUrl    String?
+  link        String?
+  status      String   @default("draft")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId Int
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  media    Media[]
+}
+
+model Experience {
+  id        Int      @id @default(autoincrement())
+  title     String
+  company   String
+  startDate DateTime
+  endDate   DateTime?
+  details   String?
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id       Int    @id @default(autoincrement())
+  name     String
+  level    Int    @default(0)
+  category String @default("Technique")
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Article {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  media    Media[]
+}
+
+model Media {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  path      String
+  type      String
+  size      Int
+  createdAt DateTime @default(now())
+
+  projectId Int?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  articleId Int?
+  article   Article? @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String?
+  duration    Int
+  price       Float?
+
+  authorId     Int
+  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+}
+
+model Availability {
+  id        Int      @id @default(autoincrement())
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  isBlocked Boolean  @default(false)
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  visitorName String
+  email       String
+  phone       String?
+  dateTime    DateTime
+  status      String   @default("pending")
+  notes       String?
+
+  serviceId Int
+  service   Service @relation(fields: [serviceId], references: [id])
+  authorId  Int
+  author    User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id        Int      @id @default(autoincrement())
+  name      String
+  company   String?
+  email     String
+  phone     String?
+  stage     String   @default("new")
+  source    String?
+  createdAt DateTime @default(now())
+
+  authorId Int
+  author   User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  notes    LeadNote[]
+}
+
+model LeadNote {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+
+  leadId Int
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id        Int            @id @default(autoincrement())
+  subject   String?
+  visitorId String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  authorId Int?
+  author   User?           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  messages  Message[]
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  senderName     String?
+  senderEmail    String?
+  content        String
+  isFromVisitor  Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  conversationId Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  type      String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeChunk {
+  id        Int      @id @default(autoincrement())
+  source    String
+  sourceId  Int
+  content   String
+  embedding String
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
