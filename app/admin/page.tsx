@@ -1,43 +1,126 @@
-import { getSession } from "@/lib/auth/session";
 import Link from "next/link";
+import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth/session";
+import { formatDateTime, APPOINTMENT_STATUS_LABELS, LEAD_STAGE_LABELS } from "@/lib/utils";
 
-export default async function AdminPage() {
-  const session = await getSession();
-  if (!session) return null;
+export const dynamic = "force-dynamic";
+
+export default async function AdminDashboard() {
+  const session = await requireAdmin();
+  const ownerId = session!.userId;
+
+  const [projects, articles, unreadMessages, pendingAppointments, newLeads, unreadNotifications] =
+    await Promise.all([
+      db.project.count({ where: { authorId: ownerId } }),
+      db.article.count({ where: { authorId: ownerId } }),
+      db.message.count({ where: { conversation: { authorId: ownerId }, isFromVisitor: true, readByAdmin: false } }),
+      db.appointment.count({ where: { authorId: ownerId, status: "pending" } }),
+      db.lead.count({ where: { authorId: ownerId, stage: "new" } }),
+      db.notification.count({ where: { authorId: ownerId, isRead: false } }),
+    ]);
+
+  const [lastLeads, lastAppointments] = await Promise.all([
+    db.lead.findMany({ where: { authorId: ownerId }, orderBy: { createdAt: "desc" }, take: 4 }),
+    db.appointment.findMany({
+      where: { authorId: ownerId },
+      orderBy: { dateTime: "desc" },
+      take: 4,
+      include: { service: { select: { name: true } } },
+    }),
+  ]);
+
+  const stats = [
+    { label: "Projets", value: projects, href: "/admin/projects" },
+    { label: "Articles", value: articles, href: "/admin/articles" },
+    { label: "Messages non lus", value: unreadMessages, href: "/admin/messages", alert: unreadMessages > 0 },
+    { label: "Demandes en attente", value: pendingAppointments, href: "/admin/calendar", alert: pendingAppointments > 0 },
+    { label: "Nouveaux prospects", value: newLeads, href: "/admin/leads", alert: newLeads > 0 },
+    { label: "Notifications", value: unreadNotifications, href: "/admin", alert: unreadNotifications > 0 },
+  ];
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-8">Tableau de bord</h1>
-      
-      <div className="bg-gray-50 p-6 rounded-lg mb-8">
-        <p className="text-lg">✅ Connecté en tant que :</p>
-        <p className="font-bold text-xl mt-2">{session.email}</p>
-        <p className="text-gray-600 mt-1">Rôle : {session.role}</p>
+    <div className="mx-auto max-w-6xl">
+      <header>
+        <p className="label-mono">Vue d&apos;ensemble</p>
+        <h1 className="display mt-2 text-3xl">Tableau de bord</h1>
+      </header>
+
+      {/* Stat cards */}
+      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {stats.map((stat) => (
+          <Link
+            key={stat.label}
+            href={stat.href}
+            className={`group rounded-lg border px-5 py-5 transition ${
+              stat.alert ? "border-accent/50 bg-accent-dim" : "border-line bg-elevated hover:border-line-strong"
+            }`}
+          >
+            <p className="label-mono !text-[0.58rem]">{stat.label}</p>
+            <p className={`display mt-2 text-3xl font-semibold ${stat.alert ? "text-accent" : ""}`}>
+              {stat.value}
+            </p>
+          </Link>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link
-          href="/admin/projects"
-          className="p-6 border rounded-lg hover:shadow-md transition-shadow"
-        >
-          <h3 className="font-bold text-lg">📁 Projets</h3>
-          <p className="text-gray-500 text-sm mt-1">Gérer tes réalisations</p>
-        </Link>
-        
-        <div className="p-6 border rounded-lg opacity-50">
-          <h3 className="font-bold text-lg">👤 Expériences</h3>
-          <p className="text-gray-500 text-sm mt-1">À venir</p>
-        </div>
-        
-        <div className="p-6 border rounded-lg opacity-50">
-          <h3 className="font-bold text-lg">⚡ Compétences</h3>
-          <p className="text-gray-500 text-sm mt-1">À venir</p>
-        </div>
-        
-        <div className="p-6 border rounded-lg opacity-50">
-          <h3 className="font-bold text-lg">📝 Articles</h3>
-          <p className="text-gray-500 text-sm mt-1">À venir</p>
-        </div>
+      <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        {/* Derniers prospects */}
+        <section className="rounded-lg border border-line bg-elevated">
+          <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+            <h2 className="display text-sm font-semibold">Derniers prospects</h2>
+            <Link href="/admin/leads" className="text-xs text-muted hover:text-accent">
+              CRM complet →
+            </Link>
+          </div>
+          <ul>
+            {lastLeads.length === 0 && (
+              <li className="px-5 py-6 text-center text-xs text-faint">Aucun prospect pour l&apos;instant.</li>
+            )}
+            {lastLeads.map((lead) => (
+              <li key={lead.id} className="border-b border-line px-5 py-3.5 last:border-0">
+                <Link href={`/admin/leads/${lead.id}`} className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{lead.name}</p>
+                    <p className="truncate text-xs text-muted">{lead.email}</p>
+                  </div>
+                  <span className="label-mono shrink-0 !text-[0.58rem] text-accent">
+                    {LEAD_STAGE_LABELS[lead.stage]}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Derniers rendez-vous */}
+        <section className="rounded-lg border border-line bg-elevated">
+          <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+            <h2 className="display text-sm font-semibold">Derniers rendez-vous</h2>
+            <Link href="/admin/calendar" className="text-xs text-muted hover:text-accent">
+              Agenda →
+            </Link>
+          </div>
+          <ul>
+            {lastAppointments.length === 0 && (
+              <li className="px-5 py-6 text-center text-xs text-faint">
+                Aucun rendez-vous pour l&apos;instant.
+              </li>
+            )}
+            {lastAppointments.map((appt) => (
+              <li key={appt.id} className="flex items-center justify-between gap-4 border-b border-line px-5 py-3.5 last:border-0">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{appt.visitorName}</p>
+                  <p className="truncate text-xs text-muted">
+                    {appt.service.name} · {formatDateTime(appt.dateTime)}
+                  </p>
+                </div>
+                <span className="label-mono shrink-0 !text-[0.58rem]">
+                  {APPOINTMENT_STATUS_LABELS[appt.status]}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );

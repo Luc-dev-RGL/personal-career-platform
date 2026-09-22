@@ -1,34 +1,54 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/auth/session";
+import { guardAdmin, readAdminJson } from "@/lib/security/admin";
+import { projectSchema, slugify } from "@/lib/validations/schemas";
+import { invalidateProjects } from "@/lib/public-data";
+import { syncSource } from "@/lib/ai/rag";
 
+/**
+ * POST /api/admin/projects — création d'un projet.
+ * Chaîne de sécurité : origin → session admin (RBAC) → Zod → Prisma.
+ */
 export async function POST(request: Request) {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-    }
+  const guard = await guardAdmin(request);
+  if (!guard.ok) return guard.response;
 
-    const { title, description, imageUrl, link, status } = await request.json();
-
-    if (!title) {
-      return NextResponse.json({ error: "Le titre est obligatoire" }, { status: 400 });
-    }
-
-    const projet = await db.project.create({
-      data: {
-        title,
-        description: description || null,
-        imageUrl: imageUrl || null,
-        link: link || null,
-        status: status || "draft",
-        authorId: session.userId,
-      },
-    });
-
-    return NextResponse.json({ success: true, projet });
-  } catch (error) {
-    console.error("Erreur création projet :", error);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  const body = await readAdminJson(request);
+  const parsed = projectSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
   }
+
+  const data = parsed.data;
+
+  // Slug unique (suffixe en cas de collision)
+  let slug = slugify(data.title);
+  const collision = await db.project.findUnique({ where: { slug } });
+  if (collision) slug = `${slug}-${Date.now().toString(36)}`;
+
+  const project = await db.project.create({
+    data: {
+      slug,
+      title: data.title,
+      description: data.description,
+      content: data.content ?? "",
+      imageUrl: data.imageUrl || null,
+      link: data.link || null,
+      repoUrl: data.repoUrl || null,
+      techTags: data.techTags ?? "",
+      status: data.status,
+      authorId: guard.session.userId,
+    },
+  });
+
+  // Mise à jour asynchrone de la base de connaissances du chatbot (RAG)
+  await syncSource(guard.session.userId, "project", project.id).catch((err) =>
+    console.error("[rag] sync projet:", err.message)
+  );
+
+  await invalidateProjects();
+  return NextResponse.json({ success: true, project }, { status: 201 });
 }

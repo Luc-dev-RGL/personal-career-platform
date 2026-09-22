@@ -1,17 +1,15 @@
 import Link from "next/link";
-import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth/session";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminProjectsPage() {
-  const session = await getSession();
-  if (!session) return null;
-
-  const projets = await db.project.findMany({
-    where: { authorId: session.userId },
+export default async function AdminArticlesPage() {
+  const session = await requireAdmin();
+  const articles = await db.article.findMany({
+    where: { authorId: session!.userId },
     orderBy: { createdAt: "desc" },
   });
 
@@ -20,34 +18,34 @@ export default async function AdminProjectsPage() {
       <header className="mb-8 flex items-end justify-between gap-4">
         <div>
           <p className="label-mono">Contenu</p>
-          <h1 className="display mt-2 text-3xl">Projets</h1>
+          <h1 className="display mt-2 text-3xl">Articles</h1>
         </div>
         <Link
-          href="/admin/projects/nouveau"
+          href="/admin/articles/nouveau"
           className="inline-flex h-10 items-center rounded-md bg-accent px-5 text-sm font-semibold text-bg transition hover:bg-accent-hover"
         >
-          + Nouveau projet
+          + Nouvel article
         </Link>
       </header>
 
       <div className="flex flex-col gap-px overflow-hidden rounded-lg border border-line bg-line">
-        {projets.length === 0 && (
+        {articles.length === 0 && (
           <p className="bg-bg px-5 py-12 text-center text-sm text-muted">
-            Aucun projet — créez le premier.
+            Aucun article — créez le premier.
           </p>
         )}
-        {projets.map((projet) => (
+        {articles.map((article) => (
           <Link
-            key={projet.id}
-            href={`/admin/projects/${projet.id}`}
+            key={article.id}
+            href={`/admin/articles/${article.id}`}
             className="flex items-center justify-between gap-4 bg-bg px-5 py-4 transition hover:bg-elevated"
           >
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{projet.title}</p>
-              <p className="label-mono mt-1 !text-[0.58rem]">{formatDate(projet.createdAt)}</p>
+              <p className="truncate text-sm font-medium">{article.title}</p>
+              <p className="label-mono mt-1 !text-[0.58rem]">{formatDate(article.createdAt)}</p>
             </div>
-            <Badge tone={projet.status === "published" ? "success" : "neutral"}>
-              {projet.status === "published" ? "Publié" : "Brouillon"}
+            <Badge tone={article.published ? "success" : "neutral"}>
+              {article.published ? "Publié" : "Brouillon"}
             </Badge>
           </Link>
         ))}
