@@ -7,112 +7,210 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ——— Tous les modèles ———
+// ————————————————————————————————————————————————
+// AUTHENTIFICATION & PROFIL
+// ————————————————————————————————————————————————
 
 model User {
-  id            Int              @id @default(autoincrement())
-  email         String           @unique
-  password      String
-  role          String           @default("admin")
-  createdAt     DateTime         @default(now())
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // hash bcrypt, jamais de mot de passe en clair
+  role      String   @default("admin") // RBAC : "admin" | "visitor"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  sessions      Session[]
+  profile       Profile?
   projects      Project[]
   experiences   Experience[]
   skills        Skill[]
   articles      Article[]
+  media         Media[]
   services      Service[]
   availables    Availability[]
+  dateBlocks    DateBlock[]
   appointments  Appointment[]
   leads         Lead[]
   conversations Conversation[]
   notifications Notification[]
   knowledge     KnowledgeChunk[]
+  chatbotConfig ChatbotConfig?
+  pageViews     PageView[]
+
+  @@index([email])
 }
+
+/// Sessions serveur (auth maison) : le cookie ne contient qu'un token
+/// opaque ; c'est le hash SHA-256 du token qui est stocké en base.
+/// Révocation immédiate possible (logout, expiration, invalidation).
+model Session {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Profil public éditable depuis /admin/profile (CMS personnel).
+model Profile {
+  id           Int      @id @default(autoincrement())
+  name         String
+  headline     String   @default("Développeur Full-Stack")
+  bio          String   @default("")
+  location     String?
+  emailPublic  String?
+  phonePublic  String?
+  avatarUrl    String?
+  resumeUrl    String?
+  availability Boolean  @default(true) // "Disponible pour opportunités"
+  githubUrl    String?
+  linkedinUrl  String?
+  websiteUrl   String?
+  updatedAt    DateTime @updatedAt
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ————————————————————————————————————————————————
+// CMS : PROJETS, EXPÉRIENCES, COMPÉTENCES, ARTICLES, MÉDIAS
+// ————————————————————————————————————————————————
 
 model Project {
   id          Int      @id @default(autoincrement())
+  slug        String   @unique // URL publique /projets/[slug]
   title       String
   description String
+  content     String   @default("") // présentation longue (markdown léger)
   imageUrl    String?
   link        String?
-  status      String   @default("draft")
+  repoUrl     String?
+  techTags    String   @default("") // tags séparés par des virgules
+  status      String   @default("draft") // draft | published
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   authorId Int
   author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   media    Media[]
+
+  @@index([authorId, status, createdAt])
 }
 
 model Experience {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   title     String
   company   String
+  location  String?
   startDate DateTime
   endDate   DateTime?
-  details   String?
+  details   String    @default("")
 
   authorId Int
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, startDate])
 }
 
 model Skill {
   id       Int    @id @default(autoincrement())
   name     String
-  level    Int    @default(0)
+  level    Int    @default(0) // 0-100
   category String @default("Technique")
+  order    Int    @default(0)
 
   authorId Int
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, category, order])
 }
 
 model Article {
   id        Int      @id @default(autoincrement())
+  slug      String   @unique
   title     String
+  excerpt   String   @default("")
   content   String
   published Boolean  @default(false)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   authorId Int
-  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   media    Media[]
+
+  @@index([authorId, published, createdAt])
 }
 
 model Media {
   id        Int      @id @default(autoincrement())
   filename  String
-  path      String
-  type      String
-  size      Int
+  path      String   // chemin public ou URL (Vercel Blob en prod)
+  type      String   // mime type validé
+  size      Int      // octets
+  width     Int?
+  height    Int?
   createdAt DateTime @default(now())
 
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   projectId Int?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   articleId Int?
-  article   Article? @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article   Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+
+  @@index([authorId, createdAt])
 }
 
+// ————————————————————————————————————————————————
+// RÉSERVATION (BOOKING)
+// ————————————————————————————————————————————————
+
 model Service {
-  id          Int          @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
   description String?
-  duration    Int
+  duration    Int     // minutes
   price       Float?
+  active      Boolean @default(true)
 
   authorId     Int
   author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   appointments Appointment[]
+
+  @@index([authorId, active])
 }
 
+/// Créneaux récurrents hebdomadaires : dayOfWeek 0 (dimanche) → 6 (samedi)
 model Availability {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   dayOfWeek Int
-  startTime String
-  endTime   String
-  isBlocked Boolean  @default(false)
+  startTime String  // "09:00"
+  endTime   String  // "17:30"
+  isBlocked Boolean @default(false)
 
   authorId Int
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, dayOfWeek])
+}
+
+/// Jours entièrement bloqués (congés, indisponibilités ponctuelles)
+model DateBlock {
+  id     Int      @id @default(autoincrement())
+  date   DateTime @db.Date
+  reason String?
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, date])
 }
 
 model Appointment {
@@ -120,29 +218,44 @@ model Appointment {
   visitorName String
   email       String
   phone       String?
-  dateTime    DateTime
-  status      String   @default("pending")
+  dateTime    DateTime // début du créneau
+  endTime     DateTime // fin (calculée depuis la durée du service)
+  status      String   @default("pending") // pending | confirmed | refused | cancelled
   notes       String?
+  createdAt   DateTime @default(now())
 
   serviceId Int
   service   Service @relation(fields: [serviceId], references: [id])
   authorId  Int
   author    User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, status, dateTime])
+  @@index([dateTime])
 }
 
+// ————————————————————————————————————————————————
+// MINI-CRM (PIPELINE DE PROSPECTS)
+// ————————————————————————————————————————————————
+
 model Lead {
-  id        Int      @id @default(autoincrement())
-  name      String
-  company   String?
-  email     String
-  phone     String?
-  stage     String   @default("new")
-  source    String?
+  id      Int      @id @default(autoincrement())
+  name    String
+  company String?
+  email   String
+  phone   String?
+  stage   String   @default("new") // new | contacted | discussion | proposal | won | lost
+  source  String?  // contact_form | booking | chatbot | manual
+  message String?  // message initial du prospect
+  value   Float?   // montant estimé (optionnel)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   authorId Int
   author   User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   notes    LeadNote[]
+  events   LeadEvent[]
+
+  @@index([authorId, stage, createdAt])
 }
 
 model LeadNote {
@@ -152,50 +265,119 @@ model LeadNote {
 
   leadId Int
   lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
 }
 
+/// Journal d'événements du pipeline (audit trail)
+model LeadEvent {
+  id        Int      @id @default(autoincrement())
+  type      String   // created | stage_changed | note_added | email_sent | ...
+  content   String
+  createdAt DateTime @default(now())
+
+  leadId Int
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+}
+
+// ————————————————————————————————————————————————
+// MESSAGERIE & NOTIFICATIONS
+// ————————————————————————————————————————————————
+
 model Conversation {
-  id        Int            @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   subject   String?
-  visitorId String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  // token opaque permettant au visiteur de suivre le fil publiquement
+  visitorToken String @unique @default(uuid())
+  visitorName  String?
+  visitorEmail String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   authorId Int?
-  author   User?           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  messages  Message[]
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([authorId, updatedAt])
 }
 
 model Message {
-  id             Int          @id @default(autoincrement())
-  senderName     String?
-  senderEmail    String?
-  content        String
-  isFromVisitor  Boolean      @default(true)
-  createdAt      DateTime     @default(now())
+  id            Int      @id @default(autoincrement())
+  senderName    String?
+  senderEmail   String?
+  content       String
+  isFromVisitor Boolean  @default(true)
+  readByAdmin   Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
   conversationId Int
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
 
 model Notification {
   id        Int      @id @default(autoincrement())
-  type      String
+  type      String   // message | lead | appointment | system
   content   String
+  link      String?  // route admin à ouvrir au clic
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
   authorId Int
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, isRead, createdAt])
 }
 
+// ————————————————————————————————————————————————
+// CHATBOT IA (RAG / GEMINI)
+// ————————————————————————————————————————————————
+
 model KnowledgeChunk {
-  id        Int      @id @default(autoincrement())
-  source    String
-  sourceId  Int
-  content   String
+  id      Int    @id @default(autoincrement())
+  source  String // project | experience | article | profile | skill | custom
+  sourceId Int
+  content String // passage texte (~800 chars)
+  // vecteur d'embedding stocké en JSON (array de floats) ;
+  // recherche par similarité cosinus côté serveur (volume modéré)
   embedding String
 
   authorId Int
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, source, sourceId])
+}
+
+/// Configuration du chatbot pilotable depuis /admin/ai
+model ChatbotConfig {
+  id             Int     @id @default(autoincrement())
+  assistantName  String  @default("Assistant")
+  greeting       String  @default("Bonjour ! Posez-moi vos questions sur mon parcours, mes projets ou mes compétences.")
+  tone           String  @default("professionnel et amical")
+  extraContext   String  @default("") // informations supplémentaires à injecter dans la base de connaissances
+  enabled        Boolean @default(true)
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ————————————————————————————————————————————————
+// ANALYTICS (STATISTIQUES DE FRÉQUENTATION)
+// ————————————————————————————————————————————————
+
+model PageView {
+  id        Int      @id @default(autoincrement())
+  path      String
+  referrer  String?
+  visitorId String?  // identifiant anonyme (cookie first-party)
+  createdAt DateTime @default(now())
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, createdAt])
+  @@index([path])
 }
