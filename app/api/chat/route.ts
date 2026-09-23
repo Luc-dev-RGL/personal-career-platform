@@ -52,9 +52,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Aucune question reçue" }, { status: 400 });
   }
 
+  const t0 = Date.now();
+
   try {
     // 1) RETRIEVAL : passages pertinents depuis la base de connaissances
-    const { passages } = await retrieveContext(ownerId, lastUserMessage.content);
+    const { passages, bestScore } = await retrieveContext(ownerId, lastUserMessage.content);
+    // Observabilité : visible dans les logs Vercel (diagnostic fallback/latence)
+    console.log(
+      `[chat] retrieval: ${passages.length} passage(s), bestScore=${bestScore.toFixed(3)}, ${Date.now() - t0}ms`
+    );
 
     const hasContext = passages.length > 0;
 
@@ -85,13 +91,11 @@ export async function POST(request: Request) {
       parts: [{ text: m.content }],
     }));
 
-    const chat = model.startChat({
-      history,
-      generationConfig: { temperature: 0.4, maxOutputTokens: 600 },
-    });
+    const chat = model.startChat({ history });
 
     const result = await chat.sendMessage(lastUserMessage.content + contextBlock);
     const reply = result.response.text().trim();
+    console.log(`[chat] génération: ${Date.now() - t0}ms total, réponse=${reply ? reply.length + " chars" : "VIDE"}`);
 
     return NextResponse.json({ reply: reply || FALLBACK_REPLY });
   } catch (err) {
