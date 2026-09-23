@@ -9,8 +9,8 @@
     "lint": "eslint",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "admin:create": "tsx scripts/create-admin.ts",
-    "seed": "tsx scripts/seed.ts"
+    "admin:create": "node --env-file=.env --import tsx scripts/create-admin.ts",
+    "seed": "node --env-file=.env --import tsx scripts/seed.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
