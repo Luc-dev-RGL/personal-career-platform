@@ -1,10 +1,11 @@
 @import "tailwindcss";
 
 /* ————————————————————————————————————————————————
-   DESIGN SYSTEM — "Bleu Nuit Éditorial"
-   Identité : bleu nuit profond (jamais noir), typographie forte,
-   un seul accent orange chaud. Pas de gradient, pas de
-   glassmorphism : la hiérarchie fait le travail.
+   DESIGN SYSTEM — "Clarté de l'Ombre"
+   Concept : Le Couloir des Merveilles Cachées.
+   L'Ombre (bleu nuit) enveloppe, les Rideaux (carmin / violet)
+   cachent, la Clarté (ambre doré) révèle. Pas de gradient
+   décoratif : la lumière vient des portes qu'on ouvre.
    ———————————————————————————————————————————————— */
 
 :root {
@@ -16,11 +17,16 @@
   --text: #f0ede4;
   --text-muted: #9aa5c0;
   --text-faint: #6b7898;
-  /* Palette sémantique : chaque couleur porte un sens, l'orange
-     reste la couleur de marque (CTA, liens, moments forts). */
-  --accent: #ff6b2c;
-  --accent-hover: #ff8351;
-  --accent-dim: rgba(255, 107, 44, 0.14);
+  /* Palette sémantique : chaque couleur porte un sens théâtral.
+     L'ambre (la Clarté) reste la couleur de marque — CTA, liens,
+     moments forts. Carmin et violet habillent les portes (Phase 2). */
+  --accent: #e8a54b;
+  --accent-hover: #f0bc6b;
+  --accent-dim: rgba(232, 165, 75, 0.14);
+  --curtain: #a4133c; /* le Rideau — carmin théâtral */
+  --curtain-deep: #6e0f2a;
+  --velvet: #7c3aed; /* le Velours — violet */
+  --door: #0f1729; /* l'Ombre profonde — les portes */
   --info: #6fa8ff;
   --info-dim: rgba(111, 168, 255, 0.14);
   --success: #4ade80;
@@ -40,13 +46,17 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-dim: var(--accent-dim);
+  --color-curtain: var(--curtain);
+  --color-curtain-deep: var(--curtain-deep);
+  --color-velvet: var(--velvet);
+  --color-door: var(--door);
   --color-info: var(--info);
   --color-info-dim: var(--info-dim);
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
   --font-sans: var(--font-inter);
-  --font-display: var(--font-space-grotesk);
+  --font-display: var(--font-fraunces);
   --font-mono: var(--font-jetbrains);
 }
 
@@ -91,10 +101,11 @@ body {
   color: var(--text-muted);
 }
 
-/* Titre display : Space Grotesk, tracking serré */
+/* Titre display : Fraunces — l'affiche de théâtre. Serif assumé,
+   optical sizing automatique, tracking légèrement serré. */
 .display {
-  font-family: var(--font-space-grotesk), sans-serif;
-  letter-spacing: -0.03em;
+  font-family: var(--font-fraunces), sans-serif;
+  letter-spacing: -0.02em;
   font-weight: 600;
 }
 

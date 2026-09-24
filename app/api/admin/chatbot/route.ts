@@ -4,6 +4,7 @@ import { guardAdmin, readAdminJson } from "@/lib/security/admin";
 import { chatbotConfigSchema } from "@/lib/validations/schemas";
 import { syncAllSources } from "@/lib/ai/rag";
 import { isGeminiConfigured } from "@/lib/ai/gemini";
+import { invalidateChatbotConfig } from "@/lib/public-data";
 
 /** PUT /api/admin/chatbot — enregistre la configuration du chatbot. */
 export async function PUT(request: Request) {
@@ -31,6 +32,10 @@ export async function PUT(request: Request) {
     },
     create: { userId: guard.session.userId, ...data },
   });
+
+  // Le nom, le message d'accueil et le flag enabled sont affichés côté
+  // public via le cache Redis → invalidation immédiate.
+  await invalidateChatbotConfig();
 
   // Le contexte additionnel fait partie des sources RAG → resync
   if (isGeminiConfigured()) {

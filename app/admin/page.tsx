@@ -41,8 +41,8 @@ export default async function AdminDashboard() {
   return (
     <div className="mx-auto max-w-6xl">
       <header>
-        <p className="label-mono">Vue d&apos;ensemble</p>
-        <h1 className="display mt-2 text-3xl">Tableau de bord</h1>
+        <p className="label-mono">Bienvenue dans les coulisses</p>
+        <h1 className="display mt-2 text-3xl">Le Foyer</h1>
       </header>
 
       {/* Stat cards */}

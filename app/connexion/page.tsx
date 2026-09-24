@@ -16,7 +16,7 @@ export default async function ConnexionPage() {
           <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-accent font-mono text-base font-bold text-bg">
             L
           </span>
-          <h1 className="display mt-5 text-2xl font-semibold">Espace d&apos;administration</h1>
+          <h1 className="display mt-5 text-2xl font-semibold">Entrée des artistes</h1>
           <p className="label-mono mt-2">Accès réservé — session chiffrée</p>
         </div>
         <LoginForm />

@@ -4,7 +4,7 @@ import { guardPublicEndpoint, parseAndValidate } from "@/lib/security/request";
 import { chatSchema } from "@/lib/validations/schemas";
 import { getChatModel, isGeminiConfigured } from "@/lib/ai/gemini";
 import { retrieveContext } from "@/lib/ai/rag";
-import { getOwnerId } from "@/lib/public-data";
+import { getOwnerId, getProfile } from "@/lib/public-data";
 
 /**
  * POST /api/chat — endpoint public du chatbot RAG.
@@ -47,26 +47,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "L'assistant est actuellement désactivé." }, { status: 503 });
   }
 
+  // Nom du candidat pour la personnalité de l'assistant (caché, 60s)
+  const profile = await getProfile().catch(() => null);
+
   const lastUserMessage = [...data.messages].reverse().find((m) => m.role === "user");
   if (!lastUserMessage) {
     return NextResponse.json({ error: "Aucune question reçue" }, { status: 400 });
   }
 
-  const t0 = Date.now();
-
   try {
     // 1) RETRIEVAL : passages pertinents depuis la base de connaissances
-    const { passages, bestScore } = await retrieveContext(ownerId, lastUserMessage.content);
-    // Observabilité : visible dans les logs Vercel (diagnostic fallback/latence)
-    console.log(
-      `[chat] retrieval: ${passages.length} passage(s), bestScore=${bestScore.toFixed(3)}, ${Date.now() - t0}ms`
-    );
+    const { passages } = await retrieveContext(ownerId, lastUserMessage.content);
 
     const hasContext = passages.length > 0;
 
     // 2) PROMPT SYSTÈME VERROUILLÉ
+    // assistantName = nom de l'ASSISTANT (config /admin/ai) ; le nom du
+    // portfolio est celui du candidat (profil) — ne pas confondre les deux.
     const systemInstruction = [
-      `Tu es l'assistant virtuel du portfolio de ${config?.assistantName ?? "ce développeur"}.`,
+      profile?.name
+        ? `Tu es « ${config?.assistantName ?? "Le Souffleur"} », l'assistant virtuel du portfolio de ${profile.name}.`
+        : `Tu es « ${config?.assistantName ?? "Le Souffleur"} », l'assistant virtuel de ce portfolio.`,
       `Ton : ${config?.tone ?? "professionnel et amical"}.`,
       "",
       "RÈGLES ABSOLUES (non négociables) :",
@@ -94,8 +95,9 @@ export async function POST(request: Request) {
     const chat = model.startChat({ history });
 
     const result = await chat.sendMessage(lastUserMessage.content + contextBlock);
-    const reply = result.response.text().trim();
-    console.log(`[chat] génération: ${Date.now() - t0}ms total, réponse=${reply ? reply.length + " chars" : "VIDE"}`);
+    // text() peut renvoyer undefined quand la réponse est vide (ex. budget
+    // de sortie consommé) — ne jamais crasher dessus.
+    const reply = (result.response.text() ?? "").trim();
 
     return NextResponse.json({ reply: reply || FALLBACK_REPLY });
   } catch (err) {

@@ -26,11 +26,12 @@ export default async function AdminAiPage() {
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
         <p className="label-mono">Système</p>
-        <h1 className="display mt-2 text-3xl">Assistant IA (RAG)</h1>
+        <h1 className="display mt-2 text-3xl">Le Souffleur</h1>
         <p className="mt-2 text-sm text-muted">
-          Le chatbot répond uniquement à partir du contenu de votre portfolio :
+          L&apos;assistant murmure uniquement ce que contient votre portfolio :
           chaque source ci-dessous est découpée, vectorisée (Gemini) puis
-          recherchée par similarité à chaque question.
+          recherchée par similarité à chaque question. Rien n&apos;est inventé —
+          un bon souffleur n&apos;improvise pas.
         </p>
       </header>
 

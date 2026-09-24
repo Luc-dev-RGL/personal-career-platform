@@ -9,11 +9,24 @@ interface ChatMessage {
 }
 
 /**
- * Widget chatbot flottant â€” interroge /api/chat (RAG Gemini cÃ´tÃ© serveur).
- * L'historique est conservÃ© cÃ´tÃ© client (max 20 messages) : aucun Ã©tat
- * sensible cÃ´tÃ© serveur, rate limiting par IP sur l'endpoint.
+ * Widget chatbot flottant — interroge /api/chat (RAG Gemini côté serveur).
+ * L'historique est conservé côté client (max 20 messages) : aucun état
+ * sensible côté serveur, rate limiting par IP sur l'endpoint.
+ *
+ * assistantName et greeting proviennent de la configuration /admin/ai
+ * (ChatbotConfig) — le message d'accueil affiché est donc celui saisi
+ * par l'administrateur, pas un texte codé en dur.
  */
-export function ChatWidget({ assistantName }: { assistantName: string }) {
+const DEFAULT_GREETING =
+  "Bonjour ! Je peux répondre à vos questions sur mon parcours, mes projets et mes compétences — uniquement à partir des données publiées sur ce site.";
+
+export function ChatWidget({
+  assistantName,
+  greeting = DEFAULT_GREETING,
+}: {
+  assistantName: string;
+  greeting?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -83,16 +96,14 @@ export function ChatWidget({ assistantName }: { assistantName: string }) {
           <div className="border-b border-line px-4 py-3">
             <p className="display text-sm font-semibold">{assistantName}</p>
             <p className="label-mono !text-[0.58rem] mt-0.5">
-              RÃ©pond Ã  partir des donnÃ©es publiques
+              Il ne murmure que ce que ce site sait
             </p>
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4" role="log" aria-live="polite">
             {messages.length === 0 && (
               <div className="rounded-lg border border-line bg-surface px-3.5 py-3 text-sm leading-relaxed text-muted">
-                Bonjour ! Je peux rÃ©pondre Ã  vos questions sur mon parcours, mes
-                projets et mes compÃ©tences â€” uniquement Ã  partir des donnÃ©es
-                publiÃ©es sur ce site.
+                {greeting}
               </div>
             )}
             {messages.map((msg, i) => (
@@ -109,7 +120,7 @@ export function ChatWidget({ assistantName }: { assistantName: string }) {
               </div>
             ))}
             {loading && (
-              <div className="flex gap-1.5 px-2" aria-label="L'assistant rÃ©dige une rÃ©ponse">
+              <div className="flex gap-1.5 px-2" aria-label="L'assistant rédige une réponse">
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
@@ -137,7 +148,7 @@ export function ChatWidget({ assistantName }: { assistantName: string }) {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Posez votre questionâ€¦"
+              placeholder="Posez votre question…"
               maxLength={2000}
               aria-label="Votre message pour l'assistant"
               className="h-9 flex-1 rounded-md border border-line bg-surface px-3 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
@@ -147,7 +158,7 @@ export function ChatWidget({ assistantName }: { assistantName: string }) {
               disabled={loading || !input.trim()}
               className="rounded-md bg-accent px-3.5 text-sm font-semibold text-bg transition hover:bg-accent-hover disabled:opacity-40"
             >
-              â†’
+              →
             </button>
           </form>
         </div>

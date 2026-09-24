@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+/* Fraunces : l'affiche de théâtre — serif variable avec optical
+   sizing, il donne au portfolio sa voix scénique. */
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
   display: "swap",
+  axes: ["opsz"],
 });
 
 const inter = Inter({
@@ -26,10 +29,10 @@ export const metadata: Metadata = {
     template: "%s — Luc",
   },
   description:
-    "Portfolio et plateforme personnelle de Luc, développeur full-stack : projets, articles, réservation d'appels et assistant IA.",
+    "Le portfolio-théâtre de Luc, développeur full-stack : chaque projet est une porte à ouvrir — architecture, données, interface, déploiement, et un assistant IA qui souffle les réponses.",
   openGraph: {
-    title: "Luc — Développeur Full-Stack",
-    description: "Projets, articles, réservation et assistant IA.",
+    title: "Luc — Le Couloir des Merveilles Cachées",
+    description: "Chaque projet est une porte. Ouvrez-la.",
     type: "website",
     locale: "fr_FR",
   },
@@ -39,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="fr"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${inter.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-bg text-ink">{children}</body>
     </html>

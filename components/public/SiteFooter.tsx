@@ -10,7 +10,7 @@ export function SiteFooter({ name }: { name: string }) {
             <span className="text-accent">.</span>dev
           </p>
           <p className="mt-1 text-xs text-faint">
-            © {new Date().getFullYear()} — Développé avec Next.js, Prisma et beaucoup de café.
+            © {new Date().getFullYear()} — Monté avec Next.js, Prisma et beaucoup de café. Rideau.
           </p>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Liens de pied de page">
@@ -27,7 +27,7 @@ export function SiteFooter({ name }: { name: string }) {
             Contact
           </Link>
           <Link href="/connexion" className="text-xs text-faint transition hover:text-muted">
-            Administration
+            Entrée des artistes
           </Link>
         </nav>
       </div>

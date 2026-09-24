@@ -104,6 +104,25 @@ export async function getExperiences() {
   });
 }
 
+/**
+ * Configuration publique du chatbot (nom affiché, message d'accueil, activation).
+ * Retourne null si jamais configurée — le widget applique alors ses valeurs
+ * par défaut. Cachée 60s : la sauvegarde admin invalide la clé.
+ */
+export async function getPublicChatbotConfig() {
+  return cached("cache:chatbot", async () => {
+    const owner = await getOwnerId();
+    return db.chatbotConfig.findUnique({
+      where: { userId: owner },
+      select: { assistantName: true, greeting: true, enabled: true },
+    });
+  });
+}
+
+export async function invalidateChatbotConfig(): Promise<void> {
+  await delCache("cache:chatbot");
+}
+
 export async function getActiveServices() {
   return cached("cache:services", async () => {
     const owner = await getOwnerId();

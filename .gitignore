@@ -42,3 +42,5 @@ yarn-error.log*
 next-env.d.ts
 
 scripts/reset-admin.ts
+*.patch
+scripts/merge-admin.js

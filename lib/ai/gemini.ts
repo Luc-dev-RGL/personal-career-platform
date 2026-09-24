@@ -20,36 +20,24 @@ export function isGeminiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY);
 }
 
-/**
- * Les modèles Gemini récents « raisonnent » avant de répondre
- * (thinking) : ce raisonnement interne consomme le budget de tokens
- * de sortie ET 20-40 s de latence — pour un chatbot factuel c'est
- * inutile et nuisible (réponse tronquée → texte vide → fallback).
- *
- * thinkingBudget: 0 le désactive. Kill-switch sans code : définir
- * GEMINI_NO_THINKING=0 dans l'environnement si l'API renvoie un 400
- * sur ce champ (visible dans les logs [chat]).
- */
-function buildGenerationConfig() {
-  const config: Record<string, unknown> = {
-    temperature: 0.4, // bas : réponses factuelles, peu créatives
-    maxOutputTokens: 2000, // était 600 : trop juste si le modèle réfléchit
-  };
-  if (process.env.GEMINI_NO_THINKING !== "0") {
-    config.thinkingConfig = { thinkingBudget: 0 };
-  }
-  return config;
-}
-
 /** Modèle de chat (paramétrable via GEMINI_CHAT_MODEL). */
 export function getChatModel(systemInstruction: string) {
   const ai = getClient();
   if (!ai) throw new Error("GEMINI_NOT_CONFIGURED");
 
   return ai.getGenerativeModel({
-    model: process.env.GEMINI_CHAT_MODEL || "gemini-3.6-flash",
+    model: process.env.GEMINI_CHAT_MODEL || "gemini-2.0-flash",
     systemInstruction,
-    generationConfig: buildGenerationConfig(),
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 2000,
+      // Thinking désactivé : sans cela le modèle consomme tout le budget de
+      // sortie en jetons de réflexion → réponse vide → 502.
+      // Kill-switch : GEMINI_NO_THINKING=0 pour réactiver le thinking.
+      ...(process.env.GEMINI_NO_THINKING === "0"
+        ? {}
+        : { thinkingConfig: { thinkingBudget: 0 } }),
+    },
   });
 }
 
@@ -59,7 +47,7 @@ export async function embedText(text: string): Promise<number[]> {
   if (!ai) throw new Error("GEMINI_NOT_CONFIGURED");
 
   const model = ai.getGenerativeModel({
-    model: process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001",
+    model: process.env.GEMINI_EMBEDDING_MODEL || "text-embedding-004",
   });
 
   const result = await model.embedContent(text.slice(0, 4000));

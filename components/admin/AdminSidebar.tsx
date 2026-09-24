@@ -4,33 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const sections: { group: string; items: { href: string; label: string; exact?: boolean }[] }[] = [
-  { group: "Pilotage", items: [{ href: "/admin", label: "Vue d'ensemble", exact: true }] },
+const sections: { group: string; items: { href: string; label: string; sub?: string; exact?: boolean }[] }[] = [
+  { group: "Pilotage", items: [{ href: "/admin", label: "Le Foyer", sub: "Tableau de bord", exact: true }] },
   {
     group: "Contenu",
     items: [
-      { href: "/admin/profile", label: "Profil" },
-      { href: "/admin/projects", label: "Projets" },
-      { href: "/admin/experience", label: "Expériences" },
-      { href: "/admin/skills", label: "Compétences" },
-      { href: "/admin/articles", label: "Articles" },
-      { href: "/admin/media", label: "Médiathèque" },
+      { href: "/admin/profile", label: "La Fiche artiste", sub: "Profil" },
+      { href: "/admin/projects", label: "Les Décors", sub: "Projets" },
+      { href: "/admin/experience", label: "Les Répétitions", sub: "Expériences" },
+      { href: "/admin/skills", label: "Les Costumes", sub: "Compétences" },
+      { href: "/admin/articles", label: "Le Livret", sub: "Articles" },
+      { href: "/admin/media", label: "Les Ateliers", sub: "Médiathèque" },
     ],
   },
   {
     group: "Business",
     items: [
-      { href: "/admin/leads", label: "Prospects (CRM)" },
-      { href: "/admin/calendar", label: "Agenda" },
-      { href: "/admin/messages", label: "Messages" },
+      { href: "/admin/leads", label: "Le Registre", sub: "Prospects · CRM" },
+      { href: "/admin/calendar", label: "La Billetterie", sub: "Rendez-vous" },
+      { href: "/admin/messages", label: "Les Feuilles de route", sub: "Messages" },
     ],
   },
   {
     group: "Système",
     items: [
-      { href: "/admin/ai", label: "Assistant IA" },
-      { href: "/admin/analytics", label: "Statistiques" },
-      { href: "/admin/settings", label: "Réglages" },
+      { href: "/admin/ai", label: "Le Souffleur", sub: "Assistant RAG" },
+      { href: "/admin/analytics", label: "La Critique", sub: "Statistiques" },
+      { href: "/admin/settings", label: "La Régie", sub: "Paramètres" },
     ],
   },
 ];
@@ -43,9 +43,9 @@ export function AdminSidebar() {
       <div className="flex h-16 items-center gap-2.5 border-b border-line px-5">
         <Link href="/admin" className="display flex items-center gap-2 text-sm font-semibold">
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-accent font-mono text-[0.6rem] font-bold text-bg">
-            A
+            C
           </span>
-          Administration
+          Les Coulisses
         </Link>
       </div>
 
@@ -71,6 +71,11 @@ export function AdminSidebar() {
                       )}
                     >
                       {item.label}
+                      {item.sub && (
+                        <span className="mt-0.5 block text-[0.62rem] font-normal text-faint">
+                          {item.sub}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -82,7 +87,7 @@ export function AdminSidebar() {
 
       <div className="border-t border-line px-5 py-4">
         <Link href="/" target="_blank" className="text-xs text-faint transition hover:text-accent">
-          ↗ Voir le site public
+          ↗ Retour sur scène
         </Link>
       </div>
     </aside>

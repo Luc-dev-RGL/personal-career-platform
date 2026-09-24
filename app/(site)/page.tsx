@@ -42,15 +42,24 @@ export default async function HomePage() {
           </div>
 
           <h1 className="display mt-8 max-w-3xl text-[2.6rem] leading-[1.05] sm:text-6xl md:text-[4.2rem]">
-            Je conçois des produits web
+            Chaque projet est une porte.
             <br />
-            qui tiennent la charge
+            Ouvrez-la
             <span className="text-accent">.</span>
           </h1>
 
-          <p className="mt-7 max-w-xl text-[1.05rem] leading-relaxed text-muted">
+          {/* La citation signature — l'identité du couloir, signée. */}
+          <blockquote className="mt-7 max-w-xl border-l-2 border-curtain pl-4 text-[1.02rem] italic leading-relaxed text-muted">
+            « J&apos;adore dénicher le mystère : mon quotidien, c&apos;est ouvrir des
+            rideaux pour voir la clarté de l&apos;ombre des merveilles cachées. »
+            <span className="label-mono mt-2 block not-italic !text-[0.6rem]">
+              — {name}
+            </span>
+          </blockquote>
+
+          <p className="mt-5 max-w-xl text-[1.05rem] leading-relaxed text-muted">
             {profile?.bio ??
-              "Développeur full-stack : architecture, base de données, API, interface, déploiement. Du premier wireframe au monitoring en production."}
+              "Développeur full-stack : architecture, base de données, API, interface, déploiement. Ce site est un théâtre — avancez dans le couloir, tirez les rideaux."}
           </p>
 
           <div className="mt-9 flex flex-wrap gap-3">
@@ -58,7 +67,7 @@ export default async function HomePage() {
               href="/projets"
               className="inline-flex h-11 items-center rounded-md bg-accent px-6 text-sm font-semibold text-bg transition hover:bg-accent-hover"
             >
-              Voir mes projets
+              Ouvrir la première porte
             </Link>
             <Link
               href="/reservation"
@@ -146,7 +155,7 @@ export default async function HomePage() {
           <div className="mx-auto max-w-6xl px-5 py-20">
             <Reveal>
               <h2 className="display text-3xl md:text-4xl">
-                <span className="mr-3 font-mono text-sm text-info">02</span>
+                <span className="mr-3 font-mono text-sm text-velvet">02</span>
                 Parcours
               </h2>
             </Reveal>
